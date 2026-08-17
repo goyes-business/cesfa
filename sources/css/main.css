@@ -13,6 +13,9 @@ main {
 .btn {
     background-color: #f9f5f5;
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
     font-size: 0.9rem;
     font-weight: 500;
     letter-spacing: 0.06em;
@@ -26,6 +29,12 @@ main {
 .btn:hover { 
     background-color: #f02004;
     color: #fff;
+}
+
+.btn svg {
+    width: 1.3em;
+    height: 1.3em;
+    flex-shrink: 0;
 }
 
 /* =====================================================

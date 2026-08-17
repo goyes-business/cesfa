@@ -122,6 +122,19 @@ main ul > li.product > article:hover .image img,
     color: #808080;
 }
 
+.ver-mas-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.ver-mas-text svg {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+}
+
 .product.ver-mas:hover .image.ver-mas-box {
     background: #f02004;
     color: #fff;
