@@ -2,7 +2,10 @@
  * banner.js — Fondo rotativo para #banner
  * - Utiliza las imágenes de la carpeta sources/head/ (banner 01.jpeg … banner 10.jpeg)
  * - Elige una imagen al azar en cada carga y la cambia suavemente cada 30 s (cross-fade)
- * - Si la imagen es más alta que el banner (cover overflow), se desplaza con el scroll (parallax por background-position)
+ * - Si la imagen desborda el banner (cover overflow), se desplaza con el scroll vertical (parallax por background-position):
+ *   · más alta que el banner → parallax vertical (top→bottom)
+ *   · más ancha que el banner → parallax horizontal (left→right) — mismo progreso que el vertical
+ *   · desborda en ambos ejes → parallax diagonal (left/top → right/bottom)
  * - Respeta prefers-reduced-motion para la transición
  * - Funciona en index.html y catalog.html (y en cualquier página que tenga #banner)
  */
@@ -129,9 +132,9 @@
     } else if (rect.top >= window.innerHeight) {
       progress = 0;
     } else {
-      // Progreso 0 -> imagen arriba, 1 -> imagen abajo
+      // Progreso 0 -> imagen en left/top (0%), 1 -> imagen en right/bottom (100%)
       // Se mapea al desplazamiento del scroll mientras el banner estuvo visible.
-      // scrollY=0 => 0, scrollY≈bh => 1. Mantiene el efecto dentro de un recorrido del alto del banner.
+      // scrollY=0 => 0, scrollY≈bh => 1. Mismo progreso para eje X e Y.
       // Clamp para no exceder.
       if (bh > 0) progress = Math.min(1, Math.max(0, scrollY / bh));
       else progress = 0.5;
@@ -150,15 +153,23 @@
         continue;
       }
       const scale = Math.max(bw / meta.w, bh / meta.h);
+      const renderedW = meta.w * scale;
       const renderedH = meta.h * scale;
-      const overflow = renderedH - bh;
-      if (overflow <= 2) {
+      const overflowW = renderedW - bw;
+      const overflowH = renderedH - bh;
+      const hasOverflowW = overflowW > 2;
+      const hasOverflowH = overflowH > 2;
+
+      if (!hasOverflowW && !hasOverflowH) {
         layer.style.backgroundPosition = "center center";
         continue;
       }
-      const yPercent = progress * 100;
-      // clamp 0-100
-      layer.style.backgroundPosition = "center " + yPercent.toFixed(2) + "%";
+
+      // Mismo progreso para ambos ejes: 0% (left/top) con scroll 0 → 100% (right/bottom) al hacer scroll ≈ alto del banner
+      const pct = (progress * 100).toFixed(2) + "%";
+      const xPos = hasOverflowW ? pct : "center";
+      const yPos = hasOverflowH ? pct : "center";
+      layer.style.backgroundPosition = xPos + " " + yPos;
     }
     ticking = false;
   }
