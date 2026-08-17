@@ -136,10 +136,6 @@ main > ul > li.product > article:hover .image img {
 
 /* Móvil: 1 columna */
 @media (max-width: 640px) {
-    #banner h1 {
-        font-size: 3rem;
-    }
-
     #end {
         margin-top: 2rem;
     }
