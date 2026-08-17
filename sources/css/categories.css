@@ -1,0 +1,155 @@
+main {
+    padding: 0;
+    max-width: none;
+}
+
+main > section {
+    padding: 4rem 0 8rem 0;
+}
+
+main > section:nth-child(even) {
+    background-color: #f9f5f5;
+    background-image: url('../bg/wave_03.svg');
+    background-size: 7rem;
+}
+
+main > section:nth-child(even) .image {
+    background-color: #fff;
+}
+
+section .category {
+    font-size: 2.5rem;
+    font-weight: 300;
+    padding: 1rem;
+}
+
+/* Grid contenedor */
+main ul {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    align-items: stretch;
+    overflow: auto;
+    /* Chrome, Edge, Safari */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+}
+
+main ul::-webkit-scrollbar {
+  display: none;
+}
+
+/* Imagen */
+.product .image {
+    width: 20rem;
+    aspect-ratio: 1;
+    background-color: #f9f5f5;
+    padding: 1rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.product .image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease;
+}
+
+main ul > li.product > article:hover .image img,
+.product .image:hover img {
+    transform: scale(1.05);
+}
+
+/* =====================================================
+   Categoría — header con título y botón Ver categoría
+   ===================================================== */
+
+.category-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-category {
+    background-color: #f02004;
+    display: inline-flex;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: #fff;
+    padding: 1rem;
+    margin: 1rem;
+    margin-top: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-category:hover {
+    background: #333;
+}
+
+/* =====================================================
+   Ver más — último cuadro de cada categoría
+   ===================================================== */
+.product.ver-mas a {
+    display: block;
+    width: 100%;
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+
+.image.ver-mas-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f5f5;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.product.ver-mas {
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: #808080;
+}
+
+.product.ver-mas:hover .image.ver-mas-box {
+    background: #f02004;
+    color: #fff;
+}
+
+/* =====================================================
+   Responsive
+   ===================================================== */
+
+/* Móvil: 1 columna */
+@media (max-width: 640px) {
+    #banner h1 {
+        font-size: 3rem;
+    }
+
+    main ul {
+        gap: 0.7rem;
+    }
+    
+    main > section {
+        padding: 2rem 0 4rem 0;
+    }
+
+    .product .image {
+        width: 15rem;
+    }
+
+    .category-header {
+        align-items: start;
+    }
+}

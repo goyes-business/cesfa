@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!-- Codificación -->
+  <meta charset="UTF-8">
+
+  <!-- Responsive -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Información básica -->
+  <title>Cesfa</title>
+  <meta name="description" content="Descripción de mi página web.">
+  <meta name="author" content="Cesfa">
+
+  <!-- SEO -->
+  <meta name="robots" content="index, follow">
+  <meta name="keywords" content="productos, catálogo, tienda, servicios">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+
+  <!-- Color del navegador en móviles -->
+  <meta name="theme-color" content="#f02004">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://www.cesfa.com.do/">
+
+  <!-- Preconexiones -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="stylesheet" href="css/banner.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/catalog.css">
+  <link rel="stylesheet" href="css/like.css">
+  <link rel="stylesheet" href="css/footer.css">
+
+  <!-- JavaScript -->
+  <script src="js/header.js" defer></script>
+  <script src="js/banner.js" defer></script>
+  <script src="js/products.js" defer></script>
+  <script src="js/catalog.js" defer></script>
+</head>
+
+<body>
+  <header id="menu">
+    <img src="icons/logo.svg" alt="Logo">
+    <menu>
+      <li><a href="../index.html">CATÁLOGO</a></li>
+      <li><a href="favorites.html">FAVORITOS</a></li>
+      <li><a href="https://wa.me/18099218324" target="_blank" rel="noopener noreferrer">WHATSAPP</a></li>
+    </menu>
+  </header>
+  <header id="banner">
+    <div class="filled_wave"></div>
+    <div class="container">
+      <h2 class="highlight">Catálogo:</h2>
+      <h1>Rosa alambrada C</h1>
+      <p>Somos una empresa dominicana especializada en la fabricación, comercialización y distribución de productos para repostería y panadería. Nos destacamos por nuestras delicadas flores de azúcar y artículos de decoración para pasteles, ofreciendo una amplia variedad de diseños, colores y tamaños para ayudar a reposteros, panaderos, decoradores y emprendedores a dar un toque especial y profesional a sus creaciones.</p>
+    </div>
+  </header>
+  <main>
+    <p id="count">Cargando productos…</p>
+    <ul>
+      <!-- Productos cargados dinámicamente desde data/products.csv -->
+    </ul>
+    <p id="end">No hay más productos en esta colección.</p>
+  </main>
+  <footer class="site-footer">
+    <div class="wave"></div>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="icons/logo.svg" alt="Cesfa Service" class="footer-brand_logo">
+          <p>Somos una empresa dominicana especializada en productos para repostería y panadería, destacándonos por nuestras flores de azúcar y artículos de decoración. Ofrecemos calidad, variedad y creatividad para hacer especial cada creación.</p>
+          <div class="footer-social">
+            <a href="https://www.facebook.com/profile.php?id=100069526093519" target="_blank" rel="noopener"><img src="icons/contacts/facebook.svg" alt="Facebook"></a>
+            <a href="https://www.instagram.com/cesfaservice/" target="_blank" rel="noopener"><img src="icons/contacts/instagram.svg" alt="Instagram"></a>
+            <a href="https://wa.me/18099218324" target="_blank" rel="noopener noreferrer"><img src="icons/contacts/whatsapp.svg" alt="WhatsApp"></a>
+          </div>
+        </div>
+
+        <div class="footer-col footer-contacts">
+          <h3 class="footer-heading">CONTACTOS</h3>
+          <ul>
+            <li>
+              <a href="https://www.google.com/maps/place/Cesfa+Service/@19.4286801,-70.6715536,17z/data=!4m6!3m5!1s0x8eb1cf0586523a4d:0x229f1e89bc37322a!8m2!3d19.4287296!4d-70.668963!16s%2Fg%2F11pz2zh_2p?entry=ttu" target="_blank" rel="noopener">
+                <img src="icons/contacts/outline/address.svg" alt="Dirección">
+                Calle No. 4, Hato Mayor, Santiago de los Caballeros, RD.
+              </a>
+            </li>
+            <li>
+              <a href="tel:+18099218324">
+                <img src="icons/contacts/outline/phone.svg" alt="Número de teléfono">
+                (809) 921-8324
+              </a>
+            </li>
+            <li>
+              <a href="mailto:pedidos@cesfa.com.do">
+                <img src="icons/contacts/outline/email.svg" alt="Correo electrónico">
+                pedidos@cesfa.com.do
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="footer-col footer-hours">
+          <h3 class="footer-heading">HORARIO</h3>
+          <dl>
+            <dt>Lunes a viernes</dt>
+            <dd>8:00 a.m. – 5:00 p.m.</dd>
+            <dt>Sábado</dt>
+            <dd>8:00 a.m. – 12:00 p.m.</dd>
+          </dl>
+          <p>* Entregas a todo el país.</p>
+        </div>
+
+        <div class="footer-col">
+          <h3 class="footer-heading">CATEGORÍAS</h3>
+          <ul id="footerCategories">
+            <!-- Cesfa renderiza aquí las categorías desde js/data.js -->
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 <strong>Cesfa Service SRL</strong> • Santiago, República Dominicana. Todos los derechos reservados.</span>
+        <span>Hecho con amor para reposteros que crean arte.</span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,138 @@
+/* =====================================================
+   #menu.css — Logo y Menú Centralizados
+   ===================================================== */
+
+body {
+  margin-top: 15rem;
+}
+
+#menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 1.5rem 1rem 1rem 1rem;
+  text-align: center;
+  background-color: #fff;
+  z-index: 100;
+  transition: padding 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Logo centrado */
+#menu > img,
+#menu .logo,
+#menu [alt="Logo"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 180px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+}
+
+/* Menú centralizado */
+#menu menu,
+#menu nav,
+#menu ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0;
+}
+
+#menu menu li,
+#menu nav li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Separador con borde entre items del menú (no |) */
+#menu menu li + li,
+#menu nav li + li {
+  border-left: 1px solid #ddd;
+}
+
+#menu menu a,
+#menu nav a {
+  display: inline-block;
+  padding: 0.2rem 1.4rem;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #333;
+  border-radius: 0;
+  transition: color 0.2s ease;
+}
+
+#menu menu a:hover,
+#menu nav a:hover {
+  color: #f02004;
+  background: none;
+  background-color: transparent;
+}
+
+#menu menu a:active,
+#menu nav a:active {
+  color: #f02004;
+}
+
+#menu menu a.active,
+#menu nav a.active {
+  color: #f02004;
+  font-weight: 700;
+}
+
+/* =====================================================
+   #menu fijo — solo menú visible al hacer scroll
+   Se activa vía JS con la clase .is-compact
+   ===================================================== */
+
+#menu.is-compact {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  gap: 0;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+  background-color: #fff;
+  box-shadow: 0 2px 25px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #eee;
+}
+
+/* Oculta el logo en estado compacto */
+#menu.is-compact > img,
+#menu.is-compact .logo,
+#menu.is-compact [alt="Logo"] {
+  display: none !important;
+}
+
+/* Compensa el salto del contenido cuando el #menu queda fijo */
+body.has-#menu-fixed {
+  padding-top: 195px;
+}
+
+/* =====================================================
+   Mobile — separación entre items más comprimida
+   ===================================================== */
+@media (max-width: 640px) {
+  #menu menu a,
+  #menu nav a {
+    padding: 0.2rem 0.65rem;
+    letter-spacing: 0.04em;
+  }
+}

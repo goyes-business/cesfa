@@ -1,0 +1,118 @@
+#banner {
+    background-color: #f9f5f5;
+    text-align: center;
+    width: 100%;
+    min-height: 30rem;
+    overflow: hidden;
+    margin-bottom: 3rem;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+}
+
+/* Capas de fondo para rotación suave */
+#banner .banner-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 1.4s ease-in-out;
+    will-change: opacity, background-position;
+    z-index: 0;
+    pointer-events: none;
+}
+
+#banner .banner-bg.is-visible {
+    opacity: 1;
+}
+
+#banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* Alpha dinámico: 85% en móvil (~320px) → 0% en desktop (≥1200px) */
+    /* #f9f5f5 = rgb(249 245 245). El 2º stop usa alpha variable con el ancho */
+    --banner-alpha: clamp(0, calc((1200px - 100vw) / 1035px), 0.85);
+    background: linear-gradient(
+        45deg,
+        #f9f5f5 20%,
+        rgb(249 245 245 / var(--banner-alpha))
+    );
+    z-index: 1;
+    pointer-events: none;
+}
+
+#banner .filled_wave {
+    position: absolute;
+    top: 0;
+    background-image: url('../bg/wave_02.svg');
+    background-repeat: repeat-x;
+    background-size: 7rem;
+    z-index: 10;
+    width: 100%;
+    height: 1.5rem;
+}
+
+#banner > div,
+#banner .banner-content {
+    position: relative;
+    z-index: 2;
+}
+
+#banner .banner-content {
+    padding-top: 4rem;
+}
+
+#banner > div > * {
+    text-align: left;
+    opacity: 1;
+}
+
+#banner h3 {
+    font-weight: 100;
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    color: #f02004;
+}
+
+#banner h1, #banner h2 {
+    font-size: 5rem;
+    font-weight: 500;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    max-width: 40rem;
+    line-height: 1;
+}
+
+#banner h2 {
+    margin: 0;
+    padding: 0;
+}
+
+#banner .highlight {
+    color: #f02004;
+}
+
+#banner p {
+    max-width: 35rem;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 640px) {
+    #banner {
+        margin-bottom: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #banner .banner-bg {
+        transition: none;
+    }
+}
