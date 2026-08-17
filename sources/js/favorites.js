@@ -136,9 +136,12 @@
         const empty = document.createElement("div");
         empty.id = "favorites-empty";
         const toIndex = window.location.pathname.includes("/sources/") ? "../index.html" : "index.html";
+        const arrowSvg = window.Cesfa && window.Cesfa.ICON_ARROW_SVG
+          ? window.Cesfa.ICON_ARROW_SVG
+          : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
         empty.innerHTML = `
           <p style="font-size:1.1rem;color:#808080;margin-bottom:1.5rem;">No tienes favoritos aún.</p>
-          <a href="${toIndex}" class="btn">EXPLORAR CATEGORÍAS 🡢</a>
+          <a href="${toIndex}" class="btn">EXPLORAR CATEGORÍAS ${arrowSvg}</a>
         `;
         // insertar fuera del ul para que no rompa grid, pero dentro de main
         // creamos un li que ocupe todo el ancho

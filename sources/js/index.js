@@ -51,7 +51,10 @@
     figure.className = "image ver-mas-box";
     const text = document.createElement("span");
     text.className = "ver-mas-text";
-    text.textContent = "VER MÁS 🡢";
+    const arrowSvg = window.Cesfa && window.Cesfa.ICON_ARROW_SVG
+      ? window.Cesfa.ICON_ARROW_SVG
+      : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+    text.innerHTML = `VER MÁS ${arrowSvg}`;
     figure.appendChild(text);
     a.appendChild(figure);
     li.appendChild(a);
