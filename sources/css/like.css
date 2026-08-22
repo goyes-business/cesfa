@@ -92,6 +92,31 @@
 }
 
 /* =====================================================
+   Etiqueta STATUS — esquina superior izquierda sobre la foto
+   Rojo #f02004, sin sombra, bordes redondeados
+   Solo se renderiza si el producto tiene STATUS
+   ===================================================== */
+.product-status {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 2;
+    background-color: #f02004;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    pointer-events: none;
+    box-shadow: none;
+    filter: none;
+    text-shadow: none;
+}
+
+/* =====================================================
    Burbuja de favoritos en el menú
    ===================================================== */
 #menu menu a.has-badge,

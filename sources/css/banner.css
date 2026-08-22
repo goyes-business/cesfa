@@ -2,7 +2,7 @@
     background-color: #f9f5f5;
     text-align: center;
     width: 100%;
-    min-height: 30rem;
+    min-height: 25rem;
     overflow: hidden;
     margin-bottom: 3rem;
     background-size: cover;
@@ -105,6 +105,10 @@
     margin-bottom: 2rem;
 }
 
+#banner .minimal-text {
+    display: none;
+}
+
 @media (max-width: 640px) {
     #banner {
         margin-bottom: 1rem;
@@ -112,6 +116,14 @@
 
     #banner h1, #banner h2 {
         font-size: 3rem;
+    }
+    
+    #banner .minimal-text {
+        display: block;
+    }
+    
+    #banner .full-text {
+        display: none;
     }
 }
 

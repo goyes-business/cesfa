@@ -27,6 +27,13 @@
     };
     figure.appendChild(img);
 
+    if (hasValue(product.status)) {
+      const statusBadge = document.createElement("span");
+      statusBadge.className = "product-status";
+      statusBadge.textContent = String(product.status).trim();
+      figure.appendChild(statusBadge);
+    }
+
     const favBtn = window.Cesfa.createFavButton(product.sku, {
       onToggle: function (added) {
         if (!added && typeof onRemove === "function") {
@@ -81,13 +88,69 @@
       weightSpan.textContent = product.weight;
       h4.appendChild(weightSpan);
     }
+    // PACKAGE: Paq. X unidades solo si >2
+    let pkgTextFav = null;
+    if (window.Cesfa && typeof window.Cesfa.formatPackageLong === "function") {
+      pkgTextFav = window.Cesfa.formatPackageLong(product);
+    } else {
+      let n = null;
+      if (product.packageNum != null) n = product.packageNum;
+      else if (product.package) {
+        let cleaned = String(product.package).replace(/[^\d.,-]/g, "");
+        if (cleaned.includes(",") && cleaned.includes(".")) cleaned = cleaned.replace(/,/g, "");
+        else if (cleaned.includes(",")) cleaned = cleaned.replace(",", ".");
+        const f = parseFloat(cleaned);
+        if (!isNaN(f)) n = Math.trunc(f);
+      }
+      if (n != null && !isNaN(n) && n > 2) pkgTextFav = `Paq. ${n} unidades`;
+    }
+    if (pkgTextFav) {
+      const pkgSpan = document.createElement("span");
+      pkgSpan.className = "tag package";
+      pkgSpan.textContent = pkgTextFav;
+      h4.appendChild(pkgSpan);
+    }
 
     content.appendChild(h3);
-    content.appendChild(h4);
+    // Fila meta: código/etiquetas/precio a la izquierda, botón +carrito a la derecha
+    const metaRow = document.createElement("div");
+    metaRow.className = "product-meta-row";
+    const metaLeft = document.createElement("div");
+    metaLeft.className = "product-meta-left";
+    metaLeft.appendChild(h4);
+    let favPriceEl = null;
     if (window.Cesfa && typeof window.Cesfa.createPriceElement === "function") {
-      const priceEl = window.Cesfa.createPriceElement(product);
-      if (priceEl) content.appendChild(priceEl);
+      favPriceEl = window.Cesfa.createPriceElement(product);
+      if (favPriceEl) metaLeft.appendChild(favPriceEl);
     }
+    metaRow.appendChild(metaLeft);
+
+    const favCartBtn = document.createElement("button");
+    favCartBtn.type = "button";
+    favCartBtn.className = "add-cart-btn";
+    favCartBtn.dataset.sku = String(product.sku);
+    favCartBtn.setAttribute("aria-label", "Agregar al carrito: " + (product.name || product.sku));
+    // Icono oficial sources/icons/add.svg
+    if (window.Cesfa && window.Cesfa.ICON_CART_ADD_SVG) {
+      favCartBtn.innerHTML = window.Cesfa.ICON_CART_ADD_SVG;
+    } else {
+      const pfx2 = window.location.pathname.includes("/sources/") ? "icons/add.svg" : "sources/icons/add.svg";
+      favCartBtn.innerHTML = '<img src="' + pfx2 + '" alt="" width="16" height="16" aria-hidden="true">';
+    }
+    if (window.Cesfa && typeof window.Cesfa.isInCart === "function" && window.Cesfa.isInCart(product.sku)) {
+      favCartBtn.classList.add("is-added");
+      favCartBtn.setAttribute("aria-pressed", "true");
+    }
+    favCartBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.Cesfa && typeof window.Cesfa.addToCart === "function") {
+        window.Cesfa.addToCart(product.sku, 1);
+      }
+    });
+    metaRow.appendChild(favCartBtn);
+
+    content.appendChild(metaRow);
     article.appendChild(content);
     li.appendChild(article);
     return li;

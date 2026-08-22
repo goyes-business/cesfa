@@ -51,7 +51,14 @@
     if (raw == null) return null;
     const s = String(raw).trim();
     if (!s) return null;
-    const cleaned = s.replace(/[^\d.,-]/g, "").replace(",", ".");
+    let cleaned = s.replace(/[^\d.,-]/g, "");
+    if (!cleaned) return null;
+    // Si contiene tanto coma como punto, la coma es separador de miles -> eliminar
+    if (cleaned.includes(",") && cleaned.includes(".")) {
+      cleaned = cleaned.replace(/,/g, "");
+    } else if (cleaned.includes(",")) {
+      cleaned = cleaned.replace(",", ".");
+    }
     const num = parseFloat(cleaned);
     return isNaN(num) ? null : num;
   }
@@ -64,6 +71,42 @@
     if (oldNum == null || newNum == null) return null;
     if (oldNum <= 0 || newNum <= 0 || newNum >= oldNum) return null;
     return Math.round(((oldNum - newNum) / oldNum) * 100);
+  }
+
+  function parsePackageValue(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    let cleaned = s.replace(/[^\d.,-]/g, "");
+    if (!cleaned) return null;
+    // Manejar coma/punto como en precios: "24.00" -> 24, "24,00" -> 24, "1,200.00" -> 1200
+    if (cleaned.includes(",") && cleaned.includes(".")) {
+      cleaned = cleaned.replace(/,/g, "");
+    } else if (cleaned.includes(",")) {
+      cleaned = cleaned.replace(",", ".");
+    }
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return null;
+    return Math.trunc(num);
+  }
+
+  // Helpers para PACKAGE: "Paq. X unidades" / "Paq. X unid." solo si >2
+  function getPackageNum(product) {
+    if (!product) return null;
+    if (product.packageNum != null) return product.packageNum;
+    return parsePackageValue(product.package);
+  }
+
+  function formatPackageLong(productOrNum) {
+    const num = typeof productOrNum === "object" && productOrNum != null ? getPackageNum(productOrNum) : parsePackageValue(productOrNum);
+    if (num == null || num <= 2) return null;
+    return `Paq. ${num} unidades`;
+  }
+
+  function formatPackageShort(productOrNum) {
+    const num = typeof productOrNum === "object" && productOrNum != null ? getPackageNum(productOrNum) : parsePackageValue(productOrNum);
+    if (num == null || num <= 2) return null;
+    return `Paq. ${num} unid.`;
   }
 
   function createPriceElement(product) {
@@ -108,10 +151,12 @@
       category: header.indexOf("CATEGORY"),
       name: header.indexOf("NAME"),
       color: header.indexOf("COLOR"),
+      package: header.indexOf("PACKAGE"),
       size: header.indexOf("SIZE"),
       weight: header.indexOf("WEIGHT"),
       oldPrice: header.indexOf("OLD PRICE"),
       newPrice: header.indexOf("NEW PRICE"),
+      status: header.indexOf("STATUS"),
     };
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
@@ -122,17 +167,23 @@
       if (!sku) continue;
       const oldPriceRaw = idx.oldPrice >= 0 ? (cols[idx.oldPrice] || "").trim() : "";
       const newPriceRaw = idx.newPrice >= 0 ? (cols[idx.newPrice] || "").trim() : "";
+      const statusRaw = idx.status >= 0 ? (cols[idx.status] || "").trim() : "";
+      const packageRaw = idx.package >= 0 ? (cols[idx.package] || "").trim() : "";
+      const packageNum = parsePackageValue(packageRaw);
       rows.push({
         sku: sku,
         category: (cols[idx.category] || "").trim(),
         name: (cols[idx.name] || "").trim(),
         color: (cols[idx.color] || "").trim(),
+        package: packageRaw,
+        packageNum: packageNum,
         size: (cols[idx.size] || "").trim(),
         weight: (cols[idx.weight] || "").trim(),
         oldPrice: oldPriceRaw,
         newPrice: newPriceRaw,
         oldPriceNum: parsePriceValue(oldPriceRaw),
         newPriceNum: parsePriceValue(newPriceRaw),
+        status: statusRaw,
         image: getImageSrc(sku),
         imagePadded: getImageSrcPadded(sku),
       });
@@ -380,6 +431,10 @@
     document.addEventListener("click", function (e) {
       // ignorar si click fue en botón fav (ya manejado) o en links/botones de acción
       if (e.target.closest(".fav-btn")) return;
+      if (e.target.closest(".add-cart-btn")) return;
+      if (e.target.closest(".cart-float-btn")) return;
+      if (e.target.closest(".cart-drawer")) return;
+      if (e.target.closest(".qty-btn")) return;
       if (e.target.closest(".btn-category")) return;
       if (e.target.closest("a")) {
         // si es un link dentro del producto (no hay), ignorar
@@ -507,7 +562,7 @@
     initFooterCategories();
   }
 
-  window.Cesfa = {
+  window.Cesfa = Object.assign(window.Cesfa || {}, {
     fetchProducts,
     parseCSV,
     getFavorites,
@@ -524,9 +579,13 @@
     formatPrice,
     getDiscountPercent,
     createPriceElement,
+    parsePackageValue,
+    getPackageNum,
+    formatPackageLong,
+    formatPackageShort,
     STORAGE_KEY,
     ICON_FILLED_SVG,
     ICON_OUTLINE_SVG,
     ICON_ARROW_SVG,
-  };
+  });
 })();

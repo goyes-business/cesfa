@@ -28,6 +28,14 @@
 
     figure.appendChild(img);
 
+    // etiqueta STATUS — superior izquierda sobre la foto, solo si existe
+    if (hasValue(product.status)) {
+      const statusBadge = document.createElement("span");
+      statusBadge.className = "product-status";
+      statusBadge.textContent = String(product.status).trim();
+      figure.appendChild(statusBadge);
+    }
+
     // botón favorito arriba derecha dentro de figure (figure es relative)
     const favBtn = window.Cesfa.createFavButton(product.sku);
     figure.appendChild(favBtn);

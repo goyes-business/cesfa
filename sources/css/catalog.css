@@ -66,6 +66,13 @@ main > ul > li.product > article:hover .image img {
     color: #313131;
 }
 
+.product h4 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0;
+}
+
 .product h4 span:not(:last-child) {
     padding-right: 0.7rem;
     margin-right: 0.7rem;
@@ -76,12 +83,18 @@ main > ul > li.product > article:hover .image img {
     font-size: 1rem;
     font-weight: 600;
     color: #f02004;
+    white-space: nowrap;
 }
 
 .product .tag {
     font-size: 1rem;
     font-weight: 400;
     color: #808080;
+    white-space: nowrap;
+}
+
+.product h4 span {
+    white-space: nowrap;
 }
 
 /* =====================================================
