@@ -207,7 +207,7 @@
         console.error("[Cesfa] Error cargando CSV:", err);
         const msg = document.createElement("p");
         msg.style.cssText = "padding:2rem;text-align:center;color:#f02004;";
-        msg.textContent = "No se pudieron cargar los productos. Verifica que el Google Sheet esté compartido como 'Cualquier persona con el enlace — Lector'.";
+        msg.textContent = "No se pudieron cargar los productos. Verifica que tengas conexión a internet.";
         throw err;
       });
     return _cachePromise;

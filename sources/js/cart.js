@@ -120,6 +120,30 @@
 
   // ---------- UI: floating button + drawer ----------
   let els = null;
+  let cartHistoryPushed = false;
+  const CART_HASH = "#cart";
+
+  // Listener global temprano para capturar el botón atrás incluso antes de que init termine
+  (function setupHistoryHandler() {
+    function handleBackClose() {
+      if (els && els.drawer && els.drawer.classList.contains("is-open")) {
+        closeDrawer({ fromPopState: true });
+      } else if (cartHistoryPushed) {
+        cartHistoryPushed = false;
+        // si quedó hash #cart sin bandeja abierta (ej. navegación manual), limpiarlo
+        if (location.hash === CART_HASH) {
+          try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+        }
+      }
+    }
+    window.addEventListener("popstate", handleBackClose);
+    window.addEventListener("hashchange", function () {
+      // fallback para navegadores que disparan hashchange en lugar de popstate al retroceder
+      if (location.hash !== CART_HASH && els && els.drawer && els.drawer.classList.contains("is-open")) {
+        closeDrawer({ fromPopState: true });
+      }
+    });
+  })();
 
   function createCartUI() {
     if (document.getElementById("cart-float-btn")) return; // ya existe
@@ -233,6 +257,7 @@
 
   function openDrawer() {
     if (!els) return;
+    if (els.drawer.classList.contains("is-open")) return;
     els.drawer.classList.add("is-open");
     els.drawer.setAttribute("aria-hidden", "false");
     // lock scroll
@@ -242,15 +267,59 @@
     refreshDrawer();
     // foco en cerrar
     setTimeout(() => els.closeBtn && els.closeBtn.focus(), 50);
+    // Empujar entrada al historial para que el botón atrás cierre la bandeja
+    // Usamos hash #cart para garantizar que se cree una entrada distinta (algunos navegadores ignoran pushState con misma URL)
+    try {
+      if (!cartHistoryPushed && location.hash !== CART_HASH) {
+        const base = location.pathname + location.search;
+        // pushState con hash no hace scroll; preferible a location.hash = ...
+        history.pushState({ cesfaCartOpen: true }, "", base + CART_HASH);
+        cartHistoryPushed = true;
+      } else if (!cartHistoryPushed) {
+        history.pushState({ cesfaCartOpen: true }, "", location.href);
+        cartHistoryPushed = true;
+      }
+    } catch (e) {
+      try { history.pushState({ cesfaCartOpen: true }, "", location.href); cartHistoryPushed = true; } catch {}
+    }
   }
 
-  function closeDrawer() {
+  function closeDrawer(opts) {
+    const fromPopState = opts && typeof opts === "object" && opts.fromPopState === true;
+    // opts puede ser el evento del click, ignorarlo
     if (!els) return;
+    if (!els.drawer.classList.contains("is-open")) {
+      if (fromPopState) {
+        cartHistoryPushed = false;
+        // si el retroceso dejó el hash, limpiarlo silenciosamente
+        if (location.hash === CART_HASH) {
+          try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+        }
+      }
+      return;
+    }
     els.drawer.classList.remove("is-open");
     els.drawer.setAttribute("aria-hidden", "true");
     document.documentElement.style.overflow = "";
     document.body.style.overflow = "";
     if (els.floatBtn) els.floatBtn.focus();
+    if (!fromPopState && cartHistoryPushed) {
+      cartHistoryPushed = false;
+      try {
+        // si abrimos con hash, retroceder quita el hash y cierra sin salir de la página
+        if (location.hash === CART_HASH) {
+          history.back();
+        } else if (history.state && history.state.cesfaCartOpen === true) {
+          history.back();
+        }
+      } catch {}
+    } else if (fromPopState) {
+      cartHistoryPushed = false;
+      // asegurar que el hash se limpie después del popstate (algunos navegadores mantienen #cart tras back)
+      if (location.hash === CART_HASH) {
+        try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+      }
+    }
   }
 
   function refreshFloatingBadge() {
@@ -524,6 +593,16 @@
   function initCartUI() {
     createCartUI();
     syncCartButtons();
+    // Limpiar estado de historial obsoleto (ej. recarga con bandeja abierta o hash #cart heredado)
+    try {
+      if (location.hash === CART_HASH) {
+        history.replaceState(null, "", location.pathname + location.search);
+      }
+      if (history.state && history.state.cesfaCartOpen) {
+        history.replaceState(null, "", location.pathname + location.search);
+      }
+      cartHistoryPushed = false;
+    } catch {}
     // Observar nuevos botones +carrito que se inserten (catálogo / favoritos renderizados después)
     const obs = new MutationObserver(function () {
       syncCartButtons();

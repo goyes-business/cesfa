@@ -82,7 +82,7 @@
     } catch (e) {
       console.error("[Cesfa] Error cargando productos:", e);
       main.innerHTML =
-        '<p style="padding:2rem;text-align:center;color:#f02004;">No se pudieron cargar los productos.<br><span style="color:#808080;font-size:.9em;">Verifica que el Google Sheet esté compartido como "Cualquier persona con el enlace — Lector".</span><br><span style="color:#808080;font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></p>';
+        '<p style="padding:2rem;text-align:center;color:#f02004;">No se pudieron cargar los productos.<br><span style="color:#808080;font-size:.9em;">Verifica que tengas conexión a internet.</span><br><span style="color:#808080;font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></p>';
       return;
     }
 
