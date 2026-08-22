@@ -7,7 +7,7 @@
  */
 (function () {
   const STORAGE_KEY = "cesfa_favorites";
-  const CSV_URL = "https://docs.google.com/spreadsheets/d/1jU5lVD5Vo9ltjgt9qRH8UiEJ4jrafX3ZhGnFpt03FEg/gviz/tq?tqx=out:csv&sheet=products";
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/1jU5lVD5Vo9ltjgt9qRH8UiEJ4jrafX3ZhGnFpt03FEg/export?format=csv&gid=1284971619";
   let _cache = null;
   let _cachePromise = null;
 
