@@ -74,7 +74,7 @@
     if (!main) return;
 
     // Limpiar contenido estático existente
-    main.innerHTML = '<p style="padding:2rem;text-align:center;color:#808080;">Cargando categorías…</p>';
+    main.innerHTML = '<p class="cesfa-status">Cargando categorías…</p>';
 
     let products;
     try {
@@ -82,7 +82,7 @@
     } catch (e) {
       console.error("[Cesfa] Error cargando productos:", e);
       main.innerHTML =
-        '<p style="padding:2rem;text-align:center;color:#f02004;">No se pudieron cargar los productos.<br><span style="color:#808080;font-size:.9em;">Verifica que tengas conexión a internet.</span><br><span style="color:#808080;font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></p>';
+        '<p class="cesfa-status cesfa-status--error">No se pudieron cargar los productos.<br><span style="font-size:.9em;">Verifica que tengas conexión a internet.</span><br><span style="font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></p>';
       return;
     }
 
@@ -145,7 +145,7 @@
 
     // Si no hay categorías (CSV vacío)
     if (catOrder.length === 0) {
-      main.innerHTML = '<p style="padding:2rem;text-align:center;color:#808080;">No hay categorías disponibles.</p>';
+      main.innerHTML = '<p class="cesfa-status">No hay categorías disponibles.</p>';
     }
   }
 

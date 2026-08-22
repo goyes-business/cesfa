@@ -162,3 +162,15 @@ main > ul > li.product > article:hover .image img {
         padding: 0.9rem 1rem 2rem;
     }
 }
+
+/* Unificación con #end para mensajes vacíos/errores */
+.cesfa-status {
+  font-size: 1rem;
+  font-style: italic;
+  color: #808080;
+  text-align: center;
+  margin-top: 3rem;
+  padding: 1rem;
+  grid-column: 1 / -1;
+}
+

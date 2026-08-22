@@ -206,7 +206,8 @@
       .catch((err) => {
         console.error("[Cesfa] Error cargando CSV:", err);
         const msg = document.createElement("p");
-        msg.style.cssText = "padding:2rem;text-align:center;color:#f02004;";
+        msg.className = "cesfa-status cesfa-status--error";
+        msg.style.cssText = "padding:2rem;text-align:center;";
         msg.textContent = "No se pudieron cargar los productos. Verifica que tengas conexión a internet.";
         throw err;
       });
@@ -373,16 +374,40 @@
     btn.addEventListener("click", function (e) {
       e.preventDefault();
       e.stopPropagation();
+      const currentlyFav = isFavorite(sku);
+      if (currentlyFav) {
+        // Confirmar antes de quitar de favoritos
+        function doRemove() {
+          const added = toggleFavorite(sku);
+          syncFavButtons(sku, added);
+          if (!added) {
+            requestAnimationFrame(function(){ if (document.activeElement === btn) btn.blur(); });
+          }
+          if (typeof opts.onToggle === "function") opts.onToggle(added, sku);
+        }
+        let productName = "";
+        try {
+          const prodEl = btn.closest(".product");
+          if (prodEl) {
+            const nameEl = prodEl.querySelector(".name");
+            if (nameEl) productName = nameEl.textContent.trim();
+            else if (prodEl.querySelector("h3")) productName = prodEl.querySelector("h3").textContent.trim().split(" - ")[0].trim();
+          }
+        } catch {}
+        if (window.Cesfa && typeof window.Cesfa.confirmFavoriteRemove === "function") {
+          window.Cesfa.confirmFavoriteRemove(productName).then(function(ok){ if (ok) doRemove(); });
+        } else if (window.Cesfa && typeof window.Cesfa.showConfirm === "function") {
+          window.Cesfa.showConfirm({ title: "¿Quitar de favoritos?", message: productName ? `¿Deseas eliminar “${productName}” de tus favoritos?` : "¿Deseas eliminar este producto de tus favoritos?", confirmText: "Quitar", cancelText: "Cancelar", icon: "heart", variant: "danger" }).then(function(ok){ if (ok) doRemove(); });
+        } else {
+          if (confirm(productName ? `¿Quitar “${productName}” de favoritos?` : "¿Quitar de favoritos?")) doRemove();
+        }
+        return;
+      }
       const added = toggleFavorite(sku);
       syncFavButtons(sku, added);
       if (added) {
         const productEl = btn.closest(".product");
         if (productEl) triggerFavAddAnimation(productEl);
-      }
-      // Fix: blur inmediato si se desmarcó para evitar que :focus-within mantenga el botón visible tras mouseleave
-      if (!added) {
-        // retrasar blur un frame para permitir animación pero quitar foco
-        requestAnimationFrame(function(){ if (document.activeElement === btn) btn.blur(); });
       }
       if (typeof opts.onToggle === "function") opts.onToggle(added, sku);
     });
@@ -449,21 +474,43 @@
       if (!btn) return;
       const sku = btn.dataset.sku;
       if (!sku) return;
-      // toggle
+      // toggle con confirmación si es para quitar
+      const currentlyFav = isFavorite(sku);
+      if (currentlyFav) {
+        let productName = "";
+        try {
+          const nameEl = product.querySelector(".name");
+          if (nameEl) productName = nameEl.textContent.trim();
+          else if (product.querySelector("h3")) productName = product.querySelector("h3").textContent.trim().split(" - ")[0].trim();
+        } catch {}
+        function doToggleOff() {
+          const added = toggleFavorite(sku);
+          syncFavButtons(sku, added);
+          if (added) triggerFavAddAnimation(product);
+          if (!added) {
+            const active = document.activeElement;
+            if (active && (active.classList.contains("fav-btn") || active.classList.contains("product"))) {
+              active.blur();
+            }
+            const favBtn = product.querySelector(".fav-btn");
+            if (favBtn && document.activeElement === favBtn) favBtn.blur();
+            if (document.activeElement === product) product.blur();
+          }
+          const detail = { sku: String(sku), added: added };
+          product.dispatchEvent(new CustomEvent("cesfa:product-toggle", { bubbles: true, detail: detail }));
+        }
+        if (window.Cesfa && typeof window.Cesfa.confirmFavoriteRemove === "function") {
+          window.Cesfa.confirmFavoriteRemove(productName).then(function(ok){ if (ok) doToggleOff(); });
+        } else if (window.Cesfa && typeof window.Cesfa.showConfirm === "function") {
+          window.Cesfa.showConfirm({ title: "¿Quitar de favoritos?", message: productName ? `¿Deseas eliminar “${productName}” de tus favoritos?` : "¿Deseas eliminar este producto de tus favoritos?", confirmText: "Quitar", cancelText: "Cancelar", icon: "heart", variant: "danger" }).then(function(ok){ if(ok) doToggleOff(); });
+        } else {
+          if (confirm(productName ? `¿Quitar “${productName}” de favoritos?` : "¿Quitar de favoritos?")) doToggleOff();
+        }
+        return;
+      }
       const added = toggleFavorite(sku);
       syncFavButtons(sku, added);
       if (added) triggerFavAddAnimation(product);
-      // Fix: quitar foco del producto/botón para que el icono inactivo no quede frizado visible tras click
-      if (!added) {
-        const active = document.activeElement;
-        if (active && (active.classList.contains("fav-btn") || active.classList.contains("product"))) {
-          active.blur();
-        }
-        // también desenfocar el botón asociado si quedó con foco
-        const favBtn = product.querySelector(".fav-btn");
-        if (favBtn && document.activeElement === favBtn) favBtn.blur();
-        if (document.activeElement === product) product.blur();
-      }
       // si el producto tiene onToggle personalizado (favorites.js usa data), el syncFavButtons ya actualizó,
       // pero favorites.js escucha cesfa:favorites-changed y re-renderiza; para animación, necesitamos trigger onToggle manualmente
       // Disparar evento personalizado para que favorites.js pueda reaccionar si necesita animación
@@ -491,6 +538,27 @@
             const btn = p.querySelector(".fav-btn[data-sku]");
             if (!btn) return;
             const sku = btn.dataset.sku;
+            const currentlyFav = isFavorite(sku);
+            if (currentlyFav) {
+              let productName = "";
+              try {
+                const nameEl = p.querySelector(".name");
+                if (nameEl) productName = nameEl.textContent.trim();
+              } catch {}
+              function doOff() {
+                const added = toggleFavorite(sku);
+                syncFavButtons(sku, added);
+                if (added) triggerFavAddAnimation(p);
+              }
+              if (window.Cesfa && typeof window.Cesfa.confirmFavoriteRemove === "function") {
+                window.Cesfa.confirmFavoriteRemove(productName).then(function(ok){ if(ok) doOff(); });
+              } else if (window.Cesfa && typeof window.Cesfa.showConfirm === "function") {
+                window.Cesfa.showConfirm({ title: "¿Quitar de favoritos?", message: productName ? `¿Deseas eliminar “${productName}” de tus favoritos?` : "¿Deseas eliminar este producto de tus favoritos?", confirmText: "Quitar", cancelText: "Cancelar", icon: "heart", variant: "danger" }).then(function(ok){ if(ok) doOff(); });
+              } else {
+                if (confirm(productName ? `¿Quitar “${productName}” de favoritos?` : "¿Quitar de favoritos?")) doOff();
+              }
+              return;
+            }
             const added = toggleFavorite(sku);
             syncFavButtons(sku, added);
             if (added) triggerFavAddAnimation(p);

@@ -178,7 +178,7 @@
       console.error("[Cesfa] Error cargando productos:", e);
       countEl.textContent = "Error al cargar productos";
       listEl.innerHTML =
-        '<li style="grid-column:1/-1;padding:2rem;text-align:center;color:#f02004;">No se pudieron cargar los productos.<br><span style="color:#808080;font-size:.9em;">Verifica que tengas conexión a internet.</span><br><span style="color:#808080;font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></li>';
+        '<li class="cesfa-status cesfa-status--error" style="grid-column:1/-1;">No se pudieron cargar los productos.<br><span style="font-size:.9em;">Verifica que tengas conexión a internet.</span><br><span style="font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></li>';
       return;
     }
 
@@ -222,7 +222,8 @@
     listEl.innerHTML = "";
     if (filtered.length === 0) {
       const empty = document.createElement("li");
-      empty.style.cssText = "grid-column:1/-1;padding:3rem 1rem;text-align:center;color:#808080;";
+      empty.className = "cesfa-status";
+      empty.style.cssText = "grid-column:1/-1;";
       if (displayCategory) {
         const toIndex = window.location.pathname.includes("/sources/") ? "../index.html" : "index.html";
         empty.innerHTML = `No hay productos en la categoría <strong>${displayCategory}</strong>. <a href="${toIndex}" style="color:#f02004;text-decoration:underline;">Volver al catálogo</a>`;

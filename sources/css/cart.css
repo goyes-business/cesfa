@@ -468,7 +468,8 @@
 .cart-empty {
   text-align: center;
   color: #808080;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-style: italic;
   padding: 2.5rem 1rem;
   display: none;
 }

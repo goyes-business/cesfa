@@ -122,12 +122,29 @@
   let els = null;
   let cartHistoryPushed = false;
   const CART_HASH = "#cart";
+  let cartScrollUnlockTimer = null;
 
   // Listener global temprano para capturar el botón atrás incluso antes de que init termine
   (function setupHistoryHandler() {
     function handleBackClose() {
+      // Si hay modal de confirmación abierto, cerrarlo primero y no tocar el carrito
+      const confirmOverlay = document.getElementById("cesfa-confirm-overlay");
+      if (confirmOverlay && confirmOverlay.classList.contains("is-open")) {
+        if (window.Cesfa && typeof window.Cesfa._closeConfirm === "function") {
+          window.Cesfa._closeConfirm(false, true);
+        } else {
+          confirmOverlay.classList.remove("is-open");
+        }
+        // Evitar que el hash #cart se procese como cierre de carrito en este mismo popstate
+        // (el historial de #cart queda intacto, el carrito sigue abierto debajo)
+        return;
+      }
       if (els && els.drawer && els.drawer.classList.contains("is-open")) {
-        closeDrawer({ fromPopState: true });
+        // Solo cerrar el carrito si el hash ya no es #cart (se retrocedió la entrada del carrito).
+        // Si el hash sigue siendo #cart, es porque se cerró un modal (#confirm) que estaba sobre el carrito.
+        if (location.hash !== CART_HASH) {
+          closeDrawer({ fromPopState: true });
+        }
       } else if (cartHistoryPushed) {
         cartHistoryPushed = false;
         // si quedó hash #cart sin bandeja abierta (ej. navegación manual), limpiarlo
@@ -138,6 +155,8 @@
     }
     window.addEventListener("popstate", handleBackClose);
     window.addEventListener("hashchange", function () {
+      const confirmOverlay = document.getElementById("cesfa-confirm-overlay");
+      if (confirmOverlay && confirmOverlay.classList.contains("is-open")) return;
       // fallback para navegadores que disparan hashchange en lugar de popstate al retroceder
       if (location.hash !== CART_HASH && els && els.drawer && els.drawer.classList.contains("is-open")) {
         closeDrawer({ fromPopState: true });
@@ -208,7 +227,14 @@
     if (els.clearBtn) {
       els.clearBtn.addEventListener("click", function () {
         if (getCart().length === 0) return;
-        clearCart();
+        function doClear() { clearCart(); }
+        if (window.Cesfa && typeof window.Cesfa.confirmCartClear === "function") {
+          window.Cesfa.confirmCartClear().then(function (ok) { if (ok) doClear(); });
+        } else if (window.Cesfa && typeof window.Cesfa.showConfirm === "function") {
+          window.Cesfa.showConfirm({ title: "¿Vaciar carrito?", message: "¿Deseas eliminar todos los productos del carrito? Esta acción no se puede deshacer.", confirmText: "Vaciar", cancelText: "Cancelar", icon: "trash", variant: "danger" }).then(function (ok) { if (ok) doClear(); });
+        } else {
+          if (confirm("¿Deseas vaciar el carrito? Se eliminarán todos los productos.")) doClear();
+        }
       });
     }
     drawer.addEventListener("click", function (e) {
@@ -229,7 +255,31 @@
       const isPlus = btn.classList.contains("qty-plus");
       const current = getCart().find((it) => it.sku === String(sku));
       const qty = current ? current.qty : 0;
-      if (isMinus) setQuantity(sku, qty - 1);
+      if (isMinus) {
+        if (qty <= 1) {
+          // Confirmar eliminación de producto individual con icono delete.svg
+          let productName = "";
+          try {
+            const nameEl = item.querySelector(".name");
+            if (nameEl && nameEl.textContent.trim()) productName = nameEl.textContent.trim();
+            else {
+              const titleEl = item.querySelector(".cart-item-title");
+              if (titleEl) productName = titleEl.textContent.trim().split(" - ")[0].trim();
+            }
+            if (!productName) productName = String(sku);
+          } catch {}
+          function doRemove() { setQuantity(sku, 0); }
+          if (window.Cesfa && typeof window.Cesfa.confirmCartRemove === "function") {
+            window.Cesfa.confirmCartRemove(productName).then(function(ok){ if (ok) doRemove(); });
+          } else if (window.Cesfa && typeof window.Cesfa.showConfirm === "function") {
+            window.Cesfa.showConfirm({ title: "¿Eliminar producto?", message: productName ? `¿Deseas eliminar “${productName}” del carrito?` : "¿Deseas eliminar este producto del carrito?", confirmText: "Eliminar", cancelText: "Cancelar", icon: "delete", variant: "danger" }).then(function(ok){ if (ok) doRemove(); });
+          } else {
+            if (confirm(productName ? `¿Eliminar “${productName}” del carrito?` : "¿Eliminar del carrito?")) doRemove();
+          }
+          return;
+        }
+        setQuantity(sku, qty - 1);
+      }
       if (isPlus) setQuantity(sku, qty + 1);
     });
 
@@ -258,6 +308,7 @@
   function openDrawer() {
     if (!els) return;
     if (els.drawer.classList.contains("is-open")) return;
+    if (cartScrollUnlockTimer) { clearTimeout(cartScrollUnlockTimer); cartScrollUnlockTimer = null; }
     els.drawer.classList.add("is-open");
     els.drawer.setAttribute("aria-hidden", "false");
     // lock scroll
@@ -300,9 +351,15 @@
     }
     els.drawer.classList.remove("is-open");
     els.drawer.setAttribute("aria-hidden", "true");
-    document.documentElement.style.overflow = "";
-    document.body.style.overflow = "";
-    if (els.floatBtn) els.floatBtn.focus();
+    // Mantener scroll bloqueado durante la animación de cierre (0.32s) para no cortar la transición
+    if (cartScrollUnlockTimer) clearTimeout(cartScrollUnlockTimer);
+    cartScrollUnlockTimer = setTimeout(function () {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      cartScrollUnlockTimer = null;
+    }, 340);
+    // Foco al botón flotante tras la animación para no interrumpirla
+    setTimeout(function () { if (els && els.floatBtn) els.floatBtn.focus(); }, 340);
     if (!fromPopState && cartHistoryPushed) {
       cartHistoryPushed = false;
       try {

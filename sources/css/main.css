@@ -72,3 +72,27 @@ main {
     line-height: 1.2;
     word-break: break-all;
 }
+
+/* =====================================================
+   Mensajes de estado unificados — listas vacías, fin de lista, errores
+   Mismo estilo que #end (italic) según requerimiento
+   ===================================================== */
+.cesfa-status,
+#end {
+  font-size: 1rem;
+  font-style: italic;
+  color: #808080;
+  text-align: center;
+}
+#end {
+  margin-top: 3rem;
+}
+.cesfa-status {
+  margin-top: 3rem;
+  padding: 1rem 1rem;
+  grid-column: 1 / -1;
+}
+.cesfa-status--error {
+  color: #808080;
+}
+

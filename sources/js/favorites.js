@@ -176,7 +176,7 @@
       console.error("[Cesfa] Error cargando productos:", e);
       countEl.textContent = "Error al cargar productos";
       listEl.innerHTML =
-        '<li style="grid-column:1/-1;padding:2rem;text-align:center;color:#f02004;">No se pudieron cargar los productos.<br><span style="color:#808080;font-size:.9em;">Verifica que tengas conexión a internet.</span><br><span style="color:#808080;font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></li>';
+        '<li class="cesfa-status cesfa-status--error" style="grid-column:1/-1;">No se pudieron cargar los productos.<br><span style="font-size:.9em;">Verifica que tengas conexión a internet.</span><br><span style="font-size:.85em;">' + (e && e.message ? e.message : "") + '</span></li>';
       return;
     }
 
@@ -203,7 +203,7 @@
           ? window.Cesfa.ICON_ARROW_SVG
           : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
         empty.innerHTML = `
-          <p style="font-size:1.1rem;color:#808080;margin-bottom:1.5rem;">No tienes favoritos aún.</p>
+          <p class="cesfa-status" style="margin-bottom:1.5rem; margin-top:0;">No tienes favoritos aún.</p>
           <a href="${toIndex}" class="btn">EXPLORAR CATEGORÍAS ${arrowSvg}</a>
         `;
         // insertar fuera del ul para que no rompa grid, pero dentro de main
