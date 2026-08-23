@@ -64,7 +64,7 @@
   }
 
   function formatPrice(num) {
-    return `$RD ${Number(num).toFixed(2)}`;
+    return `$RD ${Number(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   function getDiscountPercent(oldNum, newNum) {
