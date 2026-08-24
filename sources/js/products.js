@@ -90,6 +90,92 @@
     return Math.trunc(num);
   }
 
+  // --- Descuento por cantidad (columna DISCOUNT) ---
+  // Formato: "4=10%" ó "4 = 10%, 8=15%, 16=20%"  -> omitir espacios, qty = unidades mínimas, percent = % descuento
+  function parseDiscountRules(raw) {
+    if (raw == null) return [];
+    const s = String(raw).trim();
+    if (!s) return [];
+    const parts = s.split(",");
+    const rules = [];
+    for (let part of parts) {
+      part = part.trim();
+      if (!part) continue;
+      const cleaned = part.replace(/\s/g, "");
+      if (!cleaned) continue;
+      const eqIdx = cleaned.indexOf("=");
+      if (eqIdx === -1) continue;
+      const qtyStr = cleaned.slice(0, eqIdx);
+      let percStr = cleaned.slice(eqIdx + 1);
+      if (!qtyStr || !percStr) continue;
+      const qty = parseInt(qtyStr, 10);
+      if (isNaN(qty) || qty <= 0) continue;
+      percStr = percStr.replace(/%/g, "");
+      if (!percStr) continue;
+      const perc = parseFloat(percStr);
+      if (isNaN(perc) || perc <= 0 || perc >= 100) continue;
+      rules.push({ qty: qty, percent: perc });
+    }
+    // Ordenar asc por qty y deduplicar (último gana)
+    rules.sort((a, b) => a.qty - b.qty);
+    const seen = new Map();
+    for (const r of rules) seen.set(r.qty, r.percent);
+    const unique = Array.from(seen.entries()).map(([qty, percent]) => ({ qty, percent }));
+    unique.sort((a, b) => a.qty - b.qty);
+    return unique;
+  }
+
+  function getQtyDiscountPercent(product, qty) {
+    if (!product || !Array.isArray(product.discountRules) || product.discountRules.length === 0) return 0;
+    const q = parseInt(qty, 10);
+    if (isNaN(q) || q <= 0) return 0;
+    let best = 0;
+    for (const rule of product.discountRules) {
+      if (q >= rule.qty) best = rule.percent;
+      else break;
+    }
+    return best;
+  }
+
+  function getEffectivePrices(product, qty) {
+    if (!product) return { oldPriceNum: null, newPriceNum: null, unitPrice: null, discountPercent: 0, hasDiscount: false, basePrice: null };
+    const qtyNum = parseInt(qty, 10);
+    const hasQty = !isNaN(qtyNum) && qtyNum > 0;
+    const pct = hasQty ? getQtyDiscountPercent(product, qtyNum) : 0;
+    const origOld = product.oldPriceNum != null ? product.oldPriceNum : parsePriceValue(product.oldPrice);
+    const origNew = product.newPriceNum != null ? product.newPriceNum : parsePriceValue(product.newPrice);
+    if (pct <= 0) {
+      const unit = origNew != null ? origNew : origOld;
+      return { oldPriceNum: origOld, newPriceNum: origNew, unitPrice: unit, discountPercent: 0, hasDiscount: false, basePrice: unit };
+    }
+    let base = origNew != null ? origNew : origOld;
+    if (base == null) return { oldPriceNum: origOld, newPriceNum: origNew, unitPrice: null, discountPercent: 0, hasDiscount: false, basePrice: null };
+    let discounted = base * (1 - pct / 100);
+    discounted = Math.round(discounted * 100) / 100;
+    if (discounted < 0) discounted = 0;
+    let effOld, effNew;
+    if (origOld != null && origNew != null) {
+      effOld = origOld;
+      effNew = discounted;
+    } else if (origNew != null) {
+      effOld = origNew;
+      effNew = discounted;
+    } else if (origOld != null) {
+      effOld = origOld;
+      effNew = discounted;
+    } else {
+      effOld = null;
+      effNew = null;
+    }
+    const unit = effNew != null ? effNew : effOld;
+    return { oldPriceNum: effOld, newPriceNum: effNew, unitPrice: unit, discountPercent: pct, hasDiscount: true, basePrice: base, discountedPrice: discounted };
+  }
+
+  function getEffectiveUnitPrice(product, qty) {
+    const eff = getEffectivePrices(product, qty);
+    return eff.unitPrice;
+  }
+
   // Helpers para PACKAGE: "Paq. X unidades" / "Paq. X unid." solo si >2
   function getPackageNum(product) {
     if (!product) return null;
@@ -109,9 +195,18 @@
     return `Paq. ${num} unid.`;
   }
 
-  function createPriceElement(product) {
-    const oldNum = parsePriceValue(product.oldPrice);
-    const newNum = parsePriceValue(product.newPrice);
+  function createPriceElement(product, qty) {
+    if (!product) return null;
+    let oldNum, newNum;
+    // Si se pasa qty y el producto tiene reglas DISCOUNT, usar precios efectivos con descuento por cantidad
+    if (qty != null && Array.isArray(product.discountRules) && product.discountRules.length) {
+      const eff = getEffectivePrices(product, qty);
+      oldNum = eff.oldPriceNum;
+      newNum = eff.newPriceNum;
+    } else {
+      oldNum = product.oldPriceNum != null ? product.oldPriceNum : parsePriceValue(product.oldPrice);
+      newNum = product.newPriceNum != null ? product.newPriceNum : parsePriceValue(product.newPrice);
+    }
     if (oldNum == null && newNum == null) return null;
     const wrap = document.createElement("div");
     wrap.className = "price";
@@ -121,17 +216,21 @@
       newSpan.textContent = formatPrice(newNum);
       wrap.appendChild(newSpan);
       if (oldNum != null && oldNum > newNum) {
+        // Grupo nowrap: precio tachado + descuento en una sola línea sin quiebre
+        const group = document.createElement("span");
+        group.className = "price-old-group";
         const oldSpan = document.createElement("span");
         oldSpan.className = "price-old";
         oldSpan.textContent = formatPrice(oldNum);
-        wrap.appendChild(oldSpan);
+        group.appendChild(oldSpan);
         const disc = getDiscountPercent(oldNum, newNum);
         if (disc != null && disc > 0) {
           const discSpan = document.createElement("span");
           discSpan.className = "price-discount";
           discSpan.textContent = `-${disc}%`;
-          wrap.appendChild(discSpan);
+          group.appendChild(discSpan);
         }
+        wrap.appendChild(group);
       }
     } else if (oldNum != null) {
       const oldSpan = document.createElement("span");
@@ -157,6 +256,7 @@
       oldPrice: header.indexOf("OLD PRICE"),
       newPrice: header.indexOf("NEW PRICE"),
       status: header.indexOf("STATUS"),
+      discount: header.indexOf("DISCOUNT"),
     };
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
@@ -169,7 +269,9 @@
       const newPriceRaw = idx.newPrice >= 0 ? (cols[idx.newPrice] || "").trim() : "";
       const statusRaw = idx.status >= 0 ? (cols[idx.status] || "").trim() : "";
       const packageRaw = idx.package >= 0 ? (cols[idx.package] || "").trim() : "";
+      const discountRaw = idx.discount >= 0 ? (cols[idx.discount] || "").trim() : "";
       const packageNum = parsePackageValue(packageRaw);
+      const discountRules = parseDiscountRules(discountRaw);
       rows.push({
         sku: sku,
         category: (cols[idx.category] || "").trim(),
@@ -183,6 +285,9 @@
         newPrice: newPriceRaw,
         oldPriceNum: parsePriceValue(oldPriceRaw),
         newPriceNum: parsePriceValue(newPriceRaw),
+        discount: discountRaw,
+        discountRaw: discountRaw,
+        discountRules: discountRules,
         status: statusRaw,
         image: getImageSrc(sku),
         imagePadded: getImageSrcPadded(sku),
@@ -651,6 +756,10 @@
     getPackageNum,
     formatPackageLong,
     formatPackageShort,
+    parseDiscountRules,
+    getQtyDiscountPercent,
+    getEffectivePrices,
+    getEffectiveUnitPrice,
     STORAGE_KEY,
     ICON_FILLED_SVG,
     ICON_OUTLINE_SVG,

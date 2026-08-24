@@ -116,6 +116,12 @@
     text-shadow: none;
 }
 
+/* Categorías pares en index.html — corazón con fondo #f9f5f5 */
+main > section:nth-child(even) .fav-btn {
+    background: #f9f5f5;
+    background-color: #f9f5f5;
+}
+
 /* =====================================================
    Burbuja de favoritos en el menú
    ===================================================== */

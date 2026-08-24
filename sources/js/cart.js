@@ -87,8 +87,15 @@
     saveCart([]);
   }
 
-  function getProductPrice(product) {
+  function getProductPrice(product, qty) {
     if (!product) return null;
+    // Si hay descuento por cantidad y qty está definido, usar precio efectivo con descuento
+    if (qty != null && window.Cesfa && typeof window.Cesfa.getEffectiveUnitPrice === "function") {
+      const eff = window.Cesfa.getEffectiveUnitPrice(product, qty);
+      if (eff != null) return eff;
+    }
+    // Fallback: si producto ya tiene discountRules y qty no se pasó pero el carrito podría querer precio base, usar base sin descuento
+    // (mantener compatibilidad: si se llama sin qty, devolver precio base sin descuento por cantidad)
     const newNum = product.newPriceNum != null ? product.newPriceNum : (window.Cesfa && window.Cesfa.parsePriceValue ? window.Cesfa.parsePriceValue(product.newPrice) : null);
     const oldNum = product.oldPriceNum != null ? product.oldPriceNum : (window.Cesfa && window.Cesfa.parsePriceValue ? window.Cesfa.parsePriceValue(product.oldPrice) : null);
     if (newNum != null) return newNum;
@@ -199,7 +206,7 @@
           <p class="cart-empty">Tu carrito está vacío.</p>
         </div>
         <footer class="cart-footer">
-          <div class="cart-total"><span>Total</span><strong class="cart-total-value">$RD 0.00</strong></div>
+          <div class="cart-total"><span>TOTAL</span><strong class="cart-total-value">$RD 0.00</strong></div>
           <a class="cart-checkout-btn" href="#" rel="noopener" target="_blank">COMPRAR</a>
         </footer>
       </aside>
@@ -433,7 +440,7 @@
     for (const entry of cart) {
       const p = map.get(String(entry.sku));
       const qty = entry.qty;
-      const price = p ? getProductPrice(p) : null;
+      const price = p ? getProductPrice(p, qty) : null;
       if (price != null) total += price * qty;
 
       const li = document.createElement("li");
@@ -519,9 +526,9 @@
         }
         info.appendChild(meta);
 
-        // Precios: OLD PRICE, NEW PRICE, descuento (igual que catálogo)
+        // Precios: OLD PRICE, NEW PRICE, descuento (igual que catálogo) — con descuento por cantidad si aplica
         if (window.Cesfa && typeof window.Cesfa.createPriceElement === "function") {
-          const priceEl = window.Cesfa.createPriceElement(p);
+          const priceEl = window.Cesfa.createPriceElement(p, qty);
           if (priceEl) {
             priceEl.classList.add("cart-price");
             info.appendChild(priceEl);
@@ -574,12 +581,13 @@
       els.itemsEl.appendChild(li);
     }
 
-    // total - suma de (precio unitario * cantidad)
+    // total - suma de (precio unitario * cantidad) + " + ENVÍO" gris cuando > 0 (igual que WhatsApp)
     const totalValue = total;
-    if (window.Cesfa && window.Cesfa.formatPrice) {
-      els.totalEl.textContent = window.Cesfa.formatPrice(totalValue);
+    const formattedTotal = window.Cesfa && window.Cesfa.formatPrice ? window.Cesfa.formatPrice(totalValue) : `$RD ${Number(totalValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (totalValue > 0) {
+      els.totalEl.innerHTML = formattedTotal + '<span class="cart-shipping-suffix"> + ENVÍO</span>';
     } else {
-      els.totalEl.textContent = `$RD ${totalValue.toFixed(2)}`;
+      els.totalEl.textContent = formattedTotal;
     }
 
     // actualizar enlace COMPRAR -> WhatsApp
@@ -593,8 +601,8 @@
       for (const entry of cart) {
         const p = map.get(String(entry.sku));
         const name = p ? p.name : `Producto ${entry.sku}`;
-        const price = p ? getProductPrice(p) : null;
-        const priceStr = price != null && window.Cesfa && window.Cesfa.formatPrice ? window.Cesfa.formatPrice(price) : (price != null ? `$RD ${price.toFixed(2)}` : "");
+        const price = p ? getProductPrice(p, entry.qty) : null;
+        const priceStr = price != null && window.Cesfa && window.Cesfa.formatPrice ? window.Cesfa.formatPrice(price) : (price != null ? `$RD ${Number(price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "");
         let extra = "";
         if (p && hasValue(p.color)) extra += ` - ${String(p.color).trim()}`;
         if (p && hasValue(p.size)) extra += ` - ${String(p.size).trim()}`;
@@ -616,8 +624,8 @@
         if (pkgShortMsg) extra += ` - ${pkgShortMsg}`;
         msg += `• ${entry.qty} x ${name}${extra} (${entry.sku})` + (priceStr ? ` - ${priceStr} c/u` : "") + "\n";
       }
-      const totalStr = window.Cesfa && window.Cesfa.formatPrice ? window.Cesfa.formatPrice(totalValue) : `$RD ${totalValue.toFixed(2)}`;
-      msg += `\n*TOTAL: ${totalStr}*`;
+      const totalStr = window.Cesfa && window.Cesfa.formatPrice ? window.Cesfa.formatPrice(totalValue) : `$RD ${Number(totalValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      msg += `\n*TOTAL: ${totalStr}${totalValue > 0 ? " + ENVÍO." : ""}*`;
       const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
       checkout.setAttribute("href", url);
     }
