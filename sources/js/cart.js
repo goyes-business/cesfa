@@ -206,6 +206,7 @@
           <p class="cart-empty">Tu carrito está vacío.</p>
         </div>
         <footer class="cart-footer">
+          <div class="cart-discount" hidden><span>DESCUENTO</span><strong class="cart-discount-value"></strong></div>
           <div class="cart-total"><span>TOTAL</span><strong class="cart-total-value">$RD 0.00</strong></div>
           <a class="cart-checkout-btn" href="#" rel="noopener" target="_blank">COMPRAR</a>
         </footer>
@@ -223,6 +224,8 @@
       itemsEl: drawer.querySelector(".cart-items"),
       emptyEl: drawer.querySelector(".cart-empty"),
       totalEl: drawer.querySelector(".cart-total-value"),
+      discountEl: drawer.querySelector(".cart-discount"),
+      discountValueEl: drawer.querySelector(".cart-discount-value"),
       checkoutBtn: drawer.querySelector(".cart-checkout-btn"),
       sidebar: drawer.querySelector(".cart-sidebar"),
     };
@@ -436,12 +439,20 @@
     // render lista con información completa como en catálogo
     els.itemsEl.innerHTML = "";
     let total = 0;
+    let regularTotal = 0;
 
     for (const entry of cart) {
       const p = map.get(String(entry.sku));
       const qty = entry.qty;
       const price = p ? getProductPrice(p, qty) : null;
       if (price != null) total += price * qty;
+      // acumular total regular (precio sin descuento) para calcular ahorro
+      if (p && price != null) {
+        let regularUnit = null;
+        if (p.oldPriceNum != null) regularUnit = p.oldPriceNum;
+        else if (p.newPriceNum != null) regularUnit = p.newPriceNum;
+        if (regularUnit != null) regularTotal += regularUnit * qty;
+      }
 
       const li = document.createElement("li");
       li.className = "cart-item";
@@ -456,12 +467,32 @@
         img.alt = entry.sku;
       }
       img.loading = "lazy";
-      img.onerror = function () {
-        img.style.display = "none";
-      };
 
       const info = document.createElement("div");
       info.className = "cart-item-info";
+
+      // manejo de imagen faltante: cuadro #f9f5f5 y fallback a imagen padded
+      img.onerror = function () {
+        if (img.dataset.triedPadded !== "1" && window.Cesfa && typeof window.Cesfa.getImageSrcPadded === "function") {
+          const padded = window.Cesfa.getImageSrcPadded(entry.sku);
+          const current = img.getAttribute("src") || img.src;
+          const isPadded = current && padded && (current === padded || current.indexOf(String(entry.sku).padStart(5, "0")) !== -1);
+          if (!isPadded) {
+            img.dataset.triedPadded = "1";
+            img.src = padded;
+            return;
+          }
+        }
+        if (img.dataset.noImageHandled === "1") return;
+        img.dataset.noImageHandled = "1";
+        img.style.display = "none";
+        if (!li.querySelector(".cart-img-placeholder")) {
+          const ph = document.createElement("div");
+          ph.className = "cart-img-placeholder";
+          ph.setAttribute("aria-hidden", "true");
+          li.insertBefore(ph, info);
+        }
+      };
 
       if (p) {
         // Título: NAME - COLOR
@@ -590,6 +621,30 @@
       els.totalEl.textContent = formattedTotal;
     }
 
+    // descuento: mostrar antes del total si hay ahorro (regularTotal - total)
+    let discountTotal = 0;
+    let discountPercent = 0;
+    let formattedDiscount = "";
+    if (regularTotal > totalValue + 0.005 && regularTotal > 0) {
+      discountTotal = regularTotal - totalValue;
+      // redondear a 2 decimales para evitar 115.0000001
+      discountTotal = Math.round(discountTotal * 100) / 100;
+      discountPercent = Math.round((discountTotal / regularTotal) * 100);
+      if (discountPercent < 0) discountPercent = 0;
+      if (discountPercent > 99) discountPercent = 99;
+      formattedDiscount = window.Cesfa && window.Cesfa.formatPrice ? window.Cesfa.formatPrice(discountTotal) : `$RD ${Number(discountTotal).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (els.discountEl && els.discountValueEl) {
+      if (discountTotal > 0.005 && discountPercent > 0) {
+        els.discountValueEl.innerHTML = `${formattedDiscount} <span class="discount-percent">(-${discountPercent}%)</span>`;
+        els.discountEl.hidden = false;
+        els.discountEl.style.display = "";
+      } else {
+        els.discountEl.hidden = true;
+        els.discountEl.style.display = "none";
+      }
+    }
+
     // actualizar enlace COMPRAR -> WhatsApp
     const checkout = els.checkoutBtn;
     if (isEmpty) {
@@ -625,6 +680,9 @@
         msg += `• ${entry.qty} x ${name}${extra} (${entry.sku})` + (priceStr ? ` - ${priceStr} c/u` : "") + "\n";
       }
       const totalStr = window.Cesfa && window.Cesfa.formatPrice ? window.Cesfa.formatPrice(totalValue) : `$RD ${Number(totalValue).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      if (discountTotal > 0.005 && discountPercent > 0) {
+        msg += `\nDESCUENTO: ${formattedDiscount} (-${discountPercent}%)`;
+      }
       msg += `\n*TOTAL: ${totalStr}${totalValue > 0 ? " + ENVÍO." : ""}*`;
       const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
       checkout.setAttribute("href", url);
