@@ -1,0 +1,340 @@
+/* =====================================================
+   search.css — Barra de búsqueda debajo del banner
+   Normaliza acentos/mayúsculas y filtra por palabras
+   ===================================================== */
+
+.cesfa-search {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem 0 1rem;
+  /* queda justo debajo del banner; banner ya trae margin-bottom */
+}
+
+.cesfa-search.is-empty {
+  padding-bottom: 10rem;
+}
+
+.cesfa-search__wrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.cesfa-search__field {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid #e8e0e0;
+  border-radius: 1rem;
+  padding: 0 0.5rem 0 0.9rem;
+  height: 3rem;
+  transition: border-color .2s ease;
+}
+
+.cesfa-search__field:focus-within {
+  border-color: #f02004;
+}
+
+.cesfa-search__icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #9a9a9a;
+  pointer-events: none;
+}
+
+.cesfa-search__field:focus-within .cesfa-search__icon {
+  color: #f02004;
+}
+
+.cesfa-search__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0.85rem 0.6rem;
+  font-family: 'Roboto', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: #222;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.cesfa-search__input::placeholder {
+  color: #9a9a9a;
+}
+
+/* Quitar X nativa de type=search en WebKit */
+.cesfa-search__input::-webkit-search-decoration,
+.cesfa-search__input::-webkit-search-cancel-button,
+.cesfa-search__input::-webkit-search-results-button,
+.cesfa-search__input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.cesfa-search__clear {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: #f5f0f0;
+  color: #6b6b6b;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: background .15s ease, color .15s ease, opacity .15s ease, transform .15s ease;
+}
+
+.cesfa-search__clear:hover {
+  background: #f02004;
+  color: #fff;
+}
+
+.cesfa-search__clear:active {
+  transform: scale(.92);
+}
+
+.cesfa-search__clear[hidden] {
+  display: none !important;
+}
+
+/* Contador / feedback */
+.cesfa-search__count {
+  max-width: 640px;
+  margin: 0.7rem auto 0 auto;
+  font-family: 'Roboto', system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-style: italic;
+  color: #808080;
+  text-align: center;
+  line-height: 1.35;
+  min-height: 1.2em;
+}
+
+.cesfa-search__count[hidden] {
+  display: none !important;
+}
+
+.cesfa-search__count strong {
+  font-style: normal;
+  font-weight: 600;
+  color: #313131;
+}
+
+/* Accesibilidad: label visualmente oculto */
+.cesfa-search .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Resultados de búsqueda en index.html (grid tipo catálogo) */
+#cesfa-search-results {
+  width: 100%;
+  max-width: 1200px;
+  margin: 5rem auto 0 auto;
+  padding: 0.5rem 1rem 3rem 1rem;
+  box-sizing: border-box;
+}
+
+#cesfa-search-results[hidden],
+main[hidden] {
+  display: none !important;
+}
+
+#cesfa-search-results .cesfa-search__count {
+  margin-bottom: 1.5rem;
+}
+
+/* Grid de resultados (reusa estilos de catálogo pero aislado) */
+.cesfa-search__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cesfa-search__grid > li.product > article {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Asegurar que las tarjetas de resultados en index tengan estilo completo tipo catálogo */
+#cesfa-search-results .product .image {
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: #f9f5f5;
+  padding: 1rem;
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+#cesfa-search-results .product .image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+#cesfa-search-results .product > article:hover .image img,
+#cesfa-search-results .product .image:hover img {
+  transform: scale(1.05);
+}
+
+#cesfa-search-results .product .content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem 2rem;
+  flex: 1;
+}
+
+#cesfa-search-results .product .title {
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: #313131;
+}
+
+#cesfa-search-results .product h4 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0;
+}
+
+#cesfa-search-results .product h4 span:not(:last-child) {
+  padding-right: 0.7rem;
+  margin-right: 0.7rem;
+  border-right: 1px solid #b3b3b3;
+}
+
+#cesfa-search-results .product .sku {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f02004;
+  white-space: nowrap;
+}
+
+#cesfa-search-results .product .tag {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #808080;
+  white-space: nowrap;
+}
+
+#cesfa-search-results .product .tag.package {
+  background-color: #f9f5f5;
+  border: 1px solid #111;
+  border-radius: 0.3rem;
+  color: #111;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+}
+
+#cesfa-search-results .product h4 span {
+  white-space: nowrap;
+}
+
+#cesfa-search-results .product h4 span.tag.package:not(:last-child) {
+  border-right: none;
+}
+
+#cesfa-search-results .product .price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+#cesfa-search-results .product .price-new {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #313131;
+  line-height: 1.2;
+}
+
+#cesfa-search-results .product .price-old {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #808080;
+  text-decoration: line-through;
+  line-height: 1.2;
+}
+
+#cesfa-search-results .product .price-discount {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #f02004;
+  line-height: 1.2;
+}
+
+#cesfa-search-results .product .price-old-group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+#cesfa-search-results .product-meta-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+#cesfa-search-results .product-meta-left {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Reusa .product .image etc. ya definidos; asegurar que el grid usa mismos estilos */
+
+@media (max-width: 1024px) {
+  .cesfa-search__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .cesfa-search {
+    padding: 0 1rem 1rem 1rem;
+  }
+  .cesfa-search.is-empty {
+    padding-bottom: 10rem;
+  }
+  .cesfa-search__input {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.92rem;
+  }
+  .cesfa-search__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

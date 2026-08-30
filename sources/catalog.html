@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="css/banner.css">
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/catalog.css">
+  <link rel="stylesheet" href="css/search.css">
   <link rel="stylesheet" href="css/like.css">
   <link rel="stylesheet" href="css/confirm.css">
   <link rel="stylesheet" href="css/cart.css">
@@ -43,6 +44,7 @@
   <script src="js/header.js" defer></script>
   <script src="js/banner.js" defer></script>
   <script src="js/confirm.js" defer></script>
+  <script src="js/search.js" defer></script>
   <script src="js/products.js" defer></script>
   <script src="js/cart.js" defer></script>
   <script src="js/catalog.js" defer></script>
@@ -66,6 +68,17 @@
       <p class="minimal-text">Somos una empresa dominicana especializada en productos para repostería y panadería, destacándonos por nuestras flores de azúcar y artículos de decoración. Ofrecemos calidad, variedad y creatividad para hacer especial cada creación.</p>
     </div>
   </header>
+  <section class="cesfa-search" role="search" aria-label="Buscar productos">
+    <div class="cesfa-search__wrap">
+      <label for="cesfa-search" class="sr-only">Buscar productos</label>
+      <div class="cesfa-search__field">
+        <span class="cesfa-search__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+        <input id="cesfa-search" class="cesfa-search__input" type="search" placeholder="Buscar por nombre, categoría, código, color..." autocomplete="off" aria-label="Buscar productos">
+        <button id="cesfa-search-clear" class="cesfa-search__clear" type="button" aria-label="Limpiar búsqueda" hidden>×</button>
+      </div>
+    </div>
+    <p id="cesfa-search-count" class="cesfa-search__count" aria-live="polite" hidden></p>
+  </section>
   <main>
     <p id="count">Cargando productos…</p>
     <ul>

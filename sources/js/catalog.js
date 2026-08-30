@@ -2,16 +2,28 @@
  * catalog.js — Muestra todos los productos de una categoría (query ?category=)
  * Carga dinámicamente desde data/products.csv, usa products/{sku}.png
  * Añade botón de favorito en cada producto (arriba derecha)
+ * + Buscador debajo del banner: filtra por SKU + CATEGORY + NAME + COLOR + SIZE + WEIGHT
+ *   sin distinguir acentos/mayúsculas y con AND entre palabras ("len gamer" => len && gamer)
  */
 (function () {
   function getCategoryFromURL() {
     const params = new URLSearchParams(window.location.search);
-    // aceptar tanto ?category= como ?categoria= / ?cat=
     return params.get("category") || params.get("categoria") || params.get("cat") || "";
+  }
+
+  function getSearchFromURL() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("q") || params.get("search") || params.get("buscar") || "";
+    } catch (_e) { return ""; }
   }
 
   function hasValue(v) {
     return v != null && String(v).trim() !== "";
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
   function createProductCard(product) {
@@ -32,7 +44,6 @@
     };
     figure.appendChild(img);
 
-    // etiqueta STATUS — superior izquierda sobre la foto, solo si existe
     if (hasValue(product.status)) {
       const statusBadge = document.createElement("span");
       statusBadge.className = "product-status";
@@ -40,7 +51,6 @@
       figure.appendChild(statusBadge);
     }
 
-    // botón favorito
     const favBtn = window.Cesfa.createFavButton(product.sku);
     figure.appendChild(favBtn);
 
@@ -55,7 +65,6 @@
     nameSpan.className = "name";
     nameSpan.textContent = product.name;
     h3.appendChild(nameSpan);
-    // Solo mostrar color si existe en el CSV
     if (hasValue(product.color)) {
       const sep = document.createElement("span");
       sep.textContent = " - ";
@@ -71,7 +80,6 @@
     skuSpan.className = "sku";
     skuSpan.textContent = product.sku;
     h4.appendChild(skuSpan);
-    // Solo mostrar size y weight si existen en el CSV
     if (hasValue(product.size)) {
       const sizeSpan = document.createElement("span");
       sizeSpan.className = "tag size";
@@ -84,7 +92,6 @@
       weightSpan.textContent = product.weight;
       h4.appendChild(weightSpan);
     }
-    // PACKAGE: Paq. X unidades solo si >2
     let pkgText = null;
     if (window.Cesfa && typeof window.Cesfa.formatPackageLong === "function") {
       pkgText = window.Cesfa.formatPackageLong(product);
@@ -108,13 +115,11 @@
     }
 
     content.appendChild(h3);
-    // Fila meta: código/etiquetas/precio a la izquierda, botón +carrito a la derecha
     const metaRow = document.createElement("div");
     metaRow.className = "product-meta-row";
     const metaLeft = document.createElement("div");
     metaLeft.className = "product-meta-left";
     metaLeft.appendChild(h4);
-    // Precio: NEW PRICE, OLD PRICE tachado gris y % descuento #f02004 con $RD
     let priceEl = null;
     if (window.Cesfa && typeof window.Cesfa.createPriceElement === "function") {
       priceEl = window.Cesfa.createPriceElement(product);
@@ -127,14 +132,12 @@
     cartBtn.className = "add-cart-btn";
     cartBtn.dataset.sku = String(product.sku);
     cartBtn.setAttribute("aria-label", "Agregar al carrito: " + (product.name || product.sku));
-    // Icono oficial sources/icons/add.svg (blanco/negro via currentColor)
     if (window.Cesfa && window.Cesfa.ICON_CART_ADD_SVG) {
       cartBtn.innerHTML = window.Cesfa.ICON_CART_ADD_SVG;
     } else {
       const pfx = window.location.pathname.includes("/sources/") ? "icons/add.svg" : "sources/icons/add.svg";
       cartBtn.innerHTML = '<img src="' + pfx + '" alt="" width="16" height="16" aria-hidden="true">';
     }
-    // Estado inicial rojo si ya está en carrito
     if (window.Cesfa && typeof window.Cesfa.isInCart === "function" && window.Cesfa.isInCart(product.sku)) {
       cartBtn.classList.add("is-added");
       cartBtn.setAttribute("aria-pressed", "true");
@@ -155,21 +158,186 @@
     return li;
   }
 
+  // ---- Estado compartido entre categoría y buscador ----
+  let allProducts = [];
+  let baseFiltered = []; // filtrado solo por categoría (antes de búsqueda)
+  let displayCategory = "";
+  let mainEl = null;
+  let listEl = null;
+  let countEl = null;
+  let endEl = null;
+  let searchInput = null;
+  let searchClear = null;
+  let searchCount = null;
+
+  function filterBySearch(products, query) {
+    if (!query || !String(query).trim()) return products;
+    if (window.Cesfa && typeof window.Cesfa.searchFilter === "function") {
+      return window.Cesfa.searchFilter(products, query).filtered;
+    }
+    // Fallback manual
+    const norm = function (s) { return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); };
+    const terms = norm(query).trim().split(/\s+/).filter(Boolean);
+    if (!terms.length) return products.slice();
+    return products.filter(function (p) {
+      const hay = norm([p.sku,p.category,p.name,p.color,p.size,p.weight].join(" "));
+      return terms.every(function(t){ return hay.indexOf(t)!==-1; });
+    });
+  }
+
+  function renderList(productsToShow, opts) {
+    opts = opts || {};
+    const query = opts.query || "";
+    const hasSearch = String(query).trim().length > 0;
+
+    if (!listEl || !countEl) return;
+
+    listEl.innerHTML = "";
+
+    if (productsToShow.length === 0) {
+      if (hasSearch) {
+        // Sin coincidencias: no mostrar nada debajo de cesfa-search-count
+        if (mainEl) { mainEl.hidden = true; mainEl.style.display = "none"; }
+        if (countEl) { countEl.textContent = ""; countEl.hidden = true; countEl.style.display = "none"; }
+        if (listEl) { listEl.innerHTML = ""; listEl.hidden = true; listEl.style.display = "none"; }
+        if (endEl) { endEl.textContent = ""; endEl.hidden = true; endEl.style.display = "none"; }
+        if (searchCount) {
+          searchCount.hidden = false;
+          const catLabel = displayCategory ? ` en <strong>${escapeHtml(displayCategory)}</strong>` : "";
+          searchCount.innerHTML = `Sin resultados para <strong>“${escapeHtml(query.trim())}”</strong>${catLabel}`;
+        }
+        const searchSection = document.querySelector(".cesfa-search");
+        if (searchSection) searchSection.classList.add("is-empty");
+        return;
+      } else {
+        // Mensaje original de categoría vacía
+        if (searchCount) { searchCount.hidden = true; searchCount.textContent = ""; }
+        const searchSection = document.querySelector(".cesfa-search");
+        if (searchSection) searchSection.classList.remove("is-empty");
+        countEl.textContent = displayCategory ? `0 productos` : `0 productos`;
+        const empty = document.createElement("li");
+        empty.className = "cesfa-status";
+        empty.style.cssText = "grid-column:1/-1;";
+        if (displayCategory) {
+          const toIndex = window.location.pathname.includes("/sources/") ? "../index.html" : "index.html";
+          empty.innerHTML = `No hay productos en la categoría <strong>${escapeHtml(displayCategory)}</strong>. <a href="${toIndex}" style="color:#f02004;text-decoration:underline;">Volver al catálogo</a>`;
+        } else {
+          empty.textContent = "No hay productos disponibles.";
+        }
+        listEl.appendChild(empty);
+      }
+      if (endEl) endEl.style.display = "none";
+      return;
+    }
+
+    // Hay resultados - restaurar visibilidad por si venía de estado sin resultados
+    if (mainEl) { mainEl.hidden = false; mainEl.style.display = ""; }
+    if (countEl) { countEl.hidden = false; countEl.style.display = ""; }
+    if (listEl) { listEl.hidden = false; listEl.style.display = ""; }
+    if (endEl) { endEl.hidden = false; }
+    const searchSection = document.querySelector(".cesfa-search");
+    if (searchSection) searchSection.classList.remove("is-empty");
+
+    if (hasSearch) {
+      countEl.textContent = `${productsToShow.length} producto${productsToShow.length !== 1 ? "s" : ""} para “${query.trim()}”${displayCategory ? " en " + displayCategory : ""}`;
+      if (searchCount) {
+        searchCount.hidden = false;
+        const catLabel = displayCategory ? ` en <strong>${escapeHtml(displayCategory)}</strong>` : "";
+        searchCount.innerHTML = `${productsToShow.length} producto${productsToShow.length !== 1 ? "s" : ""} encontrado${productsToShow.length !== 1 ? "s" : ""} para <strong>“${escapeHtml(query.trim())}”</strong>${catLabel}`;
+      }
+    } else {
+      countEl.textContent = `${productsToShow.length} producto${productsToShow.length !== 1 ? "s" : ""}`;
+      if (searchCount) { searchCount.hidden = true; searchCount.textContent = ""; }
+    }
+
+    for (const p of productsToShow) {
+      listEl.appendChild(createProductCard(p));
+    }
+
+    if (endEl) {
+      endEl.style.display = "";
+      endEl.textContent = hasSearch
+        ? `Fin de los resultados para “${query.trim()}”.`
+        : "No hay más productos en esta colección.";
+    }
+  }
+
+  function applySearch() {
+    const q = searchInput ? searchInput.value : "";
+    const hasQ = String(q).trim().length > 0;
+    if (searchClear) searchClear.hidden = !hasQ;
+    // Actualizar URL con q (preservando category)
+    try {
+      const url = new URL(window.location.href);
+      if (hasQ) url.searchParams.set("q", q);
+      else url.searchParams.delete("q");
+      history.replaceState(null, "", url.pathname + (url.search ? "?" + url.searchParams.toString() : "") + url.hash);
+    } catch (_e) {}
+
+    const filtered = filterBySearch(baseFiltered, q);
+    renderList(filtered, { query: q });
+  }
+
+  function initSearch() {
+    searchInput = document.getElementById("cesfa-search");
+    searchClear = document.getElementById("cesfa-search-clear");
+    searchCount = document.getElementById("cesfa-search-count");
+
+    if (!searchInput && window.Cesfa && typeof window.Cesfa.ensureSearchDOM === "function") {
+      const dom = window.Cesfa.ensureSearchDOM({ placeholder: "Buscar por nombre, categoría, código, color..." });
+      if (dom) {
+        searchInput = dom.input;
+        searchClear = dom.clearBtn;
+        searchCount = dom.countEl;
+      }
+    }
+    if (!searchInput) return;
+
+    const initial = getSearchFromURL();
+    if (initial) searchInput.value = initial;
+
+    searchInput.addEventListener("input", applySearch);
+    searchInput.addEventListener("search", applySearch);
+
+    if (searchClear) {
+      searchClear.addEventListener("click", function () {
+        searchInput.value = "";
+        searchInput.focus();
+        applySearch();
+      });
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tag = document.activeElement && document.activeElement.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || (document.activeElement && document.activeElement.isContentEditable)) return;
+        e.preventDefault();
+        searchInput.focus();
+      }
+      if (e.key === "Escape" && document.activeElement === searchInput && searchInput.value) {
+        searchInput.value = "";
+        applySearch();
+      }
+    });
+  }
+
   async function init() {
     const categoryParam = getCategoryFromURL();
     const bannerTitle = document.querySelector("#banner h1");
     const bannerDesc = document.querySelector("#banner p");
-    const countEl = document.getElementById("count");
-    const listEl = document.querySelector("main > ul");
-    const endEl = document.getElementById("end");
+    mainEl = document.querySelector("main");
+    countEl = document.getElementById("count");
+    listEl = document.querySelector("main > ul");
+    endEl = document.getElementById("end");
 
-    // Si no hay elementos esperados, abortar silenciosamente
     if (!listEl || !countEl) return;
 
-    // Mensaje de carga
+    initSearch();
+
     listEl.innerHTML = "";
     countEl.textContent = "Cargando productos…";
     if (endEl) endEl.style.display = "none";
+    if (searchCount) { searchCount.hidden = true; searchCount.textContent = ""; }
 
     let products;
     try {
@@ -182,26 +350,31 @@
       return;
     }
 
+    allProducts = products;
+
+    // Pre-cache haystack para búsqueda
+    if (window.Cesfa && typeof window.Cesfa.searchHaystack === "function") {
+      for (let i = 0; i < allProducts.length; i++) window.Cesfa.searchHaystack(allProducts[i]);
+    }
+
     let filtered = products;
-    let displayCategory = categoryParam;
+    displayCategory = categoryParam;
 
     if (categoryParam) {
       const decoded = decodeURIComponent(categoryParam);
       displayCategory = decoded;
       filtered = products.filter((p) => p.category === decoded);
-      // Si no coincide exacto, probar case-insensitive / trim
       if (filtered.length === 0) {
         const lower = decoded.toLowerCase().trim();
         filtered = products.filter((p) => p.category.toLowerCase().trim() === lower);
         if (filtered.length) displayCategory = filtered[0].category;
       }
     } else {
-      // sin filtro: mostrar primera categoría o todos — aquí mostramos todos pero banner genérico
-      // Para mantener UX del catálogo, si no hay parámetro, mostrar todos los productos
       displayCategory = "";
     }
 
-    // Actualizar banner — el título muestra la categoría, la descripción es estática (igual que index.html)
+    baseFiltered = filtered;
+
     const STATIC_BANNER_DESC =
       "Somos una empresa dominicana especializada en la fabricación, comercialización y distribución de productos para repostería y panadería. Nos destacamos por nuestras delicadas flores de azúcar y artículos de decoración para pasteles, ofreciendo una amplia variedad de diseños, colores y tamaños para ayudar a reposteros, panaderos, decoradores y emprendedores a dar un toque especial y profesional a sus creaciones.";
     if (bannerTitle) {
@@ -215,36 +388,18 @@
       bannerDesc.textContent = STATIC_BANNER_DESC;
     }
 
-    // Actualizar contador
-    countEl.textContent = `${filtered.length} producto${filtered.length !== 1 ? "s" : ""}`;
-
-    // Renderizar lista
-    listEl.innerHTML = "";
-    if (filtered.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "cesfa-status";
-      empty.style.cssText = "grid-column:1/-1;";
-      if (displayCategory) {
-        const toIndex = window.location.pathname.includes("/sources/") ? "../index.html" : "index.html";
-        empty.innerHTML = `No hay productos en la categoría <strong>${displayCategory}</strong>. <a href="${toIndex}" style="color:#f02004;text-decoration:underline;">Volver al catálogo</a>`;
-      } else {
-        empty.textContent = "No hay productos disponibles.";
-      }
-      listEl.appendChild(empty);
-      if (endEl) endEl.style.display = "none";
-      return;
+    // Si hay búsqueda inicial en la URL o en el input, aplicarla; si no, render directo
+    const initialQ = (searchInput && searchInput.value) ? searchInput.value : getSearchFromURL();
+    if (initialQ && String(initialQ).trim()) {
+      if (searchInput) searchInput.value = initialQ;
+      const finalFiltered = filterBySearch(baseFiltered, initialQ);
+      // Mostrar clear
+      if (searchClear) searchClear.hidden = false;
+      renderList(finalFiltered, { query: initialQ });
+    } else {
+      renderList(baseFiltered, { query: "" });
     }
 
-    for (const p of filtered) {
-      listEl.appendChild(createProductCard(p));
-    }
-
-    if (endEl) {
-      endEl.style.display = "";
-      endEl.textContent = "No hay más productos en esta colección.";
-    }
-
-    // Escuchar cambios de favoritos para mantener estado visual sincronizado (por si se usa desde otra pestaña)
     window.addEventListener("storage", function (e) {
       if (e.key === window.Cesfa.STORAGE_KEY) {
         const favs = window.Cesfa.getFavorites();
@@ -266,3 +421,4 @@
     init();
   }
 })();
+
